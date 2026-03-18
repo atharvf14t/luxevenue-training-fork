@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MessageSquare, Plus, Settings, User, Trash2, LogOut } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { SessionLimitModal } from "@/components/modals/SessionLimitModal";
 
 interface ChatSession {
@@ -23,7 +24,7 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
   const { data: session } = useSession();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -73,22 +74,20 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
     }
   };
 
-  const handleDeleteSession = async (sessionId: string) => {
-    if (deleteConfirmId !== sessionId) {
-      setDeleteConfirmId(sessionId);
-      return;
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTargetId) return;
+    const sessionId = deleteTargetId;
+    setDeleteTargetId(null);
+
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+
+    if (pathname === `/chat/${sessionId}`) {
+      router.push("/chat");
     }
 
-    const res = await fetch(`/api/sessions/${sessionId}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      setDeleteConfirmId(null);
-      await fetchSessions();
-      if (pathname === `/chat/${sessionId}`) {
-        router.push("/chat");
-      }
+    const res = await fetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
+    if (!res.ok) {
+      fetchSessions();
     }
   };
 
@@ -132,7 +131,6 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
         <div className="flex-1 overflow-y-auto px-2">
           {sessions.map((session) => {
             const isActive = currentSessionId === session.id;
-            const isConfirming = deleteConfirmId === session.id;
 
             return (
               <div
@@ -143,7 +141,6 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
                     : "text-[#8892a4] hover:bg-[#161e2e] hover:text-[#e8eaf0]"
                 }`}
                 onClick={() => {
-                  setDeleteConfirmId(null);
                   router.push(`/chat/${session.id}`);
                   onClose?.();
                 }}
@@ -158,16 +155,12 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
 
                 {/* Delete button */}
                 <button
-                  className={`hidden group-hover:flex w-4 h-4 items-center justify-center flex-shrink-0 transition-colors ${
-                    isConfirming
-                      ? "text-red-400"
-                      : "text-[#6b7280] hover:text-red-400"
-                  }`}
+                  className="hidden group-hover:flex w-4 h-4 items-center justify-center flex-shrink-0 text-[#6b7280] hover:text-red-400 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDeleteSession(session.id);
+                    setDeleteTargetId(session.id);
                   }}
-                  title={isConfirming ? "Click again to confirm delete" : "Delete conversation"}
+                  title="Delete conversation"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -218,6 +211,35 @@ export function ChatSidebar({ isOpen = true, onClose }: ChatSidebarProps) {
         open={showLimitModal}
         onClose={() => setShowLimitModal(false)}
       />
+
+      {/* Delete conversation confirmation modal */}
+      <Dialog.Root open={deleteTargetId !== null} onOpenChange={(o) => !o && setDeleteTargetId(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm rounded-2xl border border-[#1e2d3d] bg-[#111827] p-6 shadow-2xl">
+            <Dialog.Title className="font-playfair text-lg font-semibold text-white mb-3">
+              Delete Conversation
+            </Dialog.Title>
+            <Dialog.Description className="text-sm text-[#8892a4] leading-relaxed mb-6">
+              Are you sure you want to delete this conversation? This cannot be undone.
+            </Dialog.Description>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTargetId(null)}
+                className="flex-1 rounded-xl bg-[#161e2e] border border-[#2a3a50] px-4 py-2.5 text-sm text-[#e8eaf0] hover:bg-[#1e2d40] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2.5 text-sm text-white font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }
