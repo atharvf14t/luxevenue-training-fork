@@ -299,16 +299,40 @@ export function MessageBubble({ message, onChipClick }: MessageBubbleProps) {
   );
 }
 
+const LOADER_PHRASES = [
+  "Curating ideas...",
+  "Generating options...",
+  "Curating recommendations...",
+  "Generating your plan...",
+];
+
 export function TypingIndicator() {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setPhraseIndex((i) => (i + 1) % LOADER_PHRASES.length);
+        setVisible(true);
+      }, 300);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex gap-3 items-start">
       <div className="w-7 h-7 rounded-full bg-[#111827] border border-[#1e2d3d] flex items-center justify-center text-[#c9a84c] text-xs flex-shrink-0 mt-0.5">
         ✦
       </div>
-      <div className="flex gap-1.5 items-center py-2">
-        <div className="w-2 h-2 rounded-full bg-[#4b5563] animate-bounce bounce-delay-0" />
-        <div className="w-2 h-2 rounded-full bg-[#4b5563] animate-bounce bounce-delay-150" />
-        <div className="w-2 h-2 rounded-full bg-[#4b5563] animate-bounce bounce-delay-300" />
+      <div className="flex items-center py-2">
+        <span
+          className="text-sm text-[#4b5563] transition-opacity duration-300"
+          style={{ opacity: visible ? 1 : 0 }}
+        >
+          {LOADER_PHRASES[phraseIndex]}
+        </span>
       </div>
     </div>
   );
