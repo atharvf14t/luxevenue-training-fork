@@ -123,19 +123,35 @@ export async function handleToolCall(
       if (venue_type && venue_type !== 'any') where.venueStyle = venue_type;
       if (capacity) where.capacity = { gte: capacity };
 
-      const venues = await prisma.venue.findMany({
+      let venues = await prisma.venue.findMany({
         where,
         take: 3,
         orderBy: { pricePerDayMin: 'asc' },
       });
 
       const guestCount = capacity ?? 100;
+      let styleUnavailableNote = '';
 
-      if (venues.length === 0) {
-        return 'No venues found matching your criteria. Try broadening your search.';
+      // Fallback: if specific style requested but none found, retry without style filter
+      if (venues.length === 0 && venue_type && venue_type !== 'any') {
+        const fallbackWhere: Record<string, unknown> = {};
+        if (city) fallbackWhere.city = { contains: city, mode: 'insensitive' };
+        if (capacity) fallbackWhere.capacity = { gte: capacity };
+        venues = await prisma.venue.findMany({
+          where: fallbackWhere,
+          take: 3,
+          orderBy: { pricePerDayMin: 'asc' },
+        });
+        if (venues.length > 0) {
+          styleUnavailableNote = `Note: No ${venue_type} venues are currently available in ${city}. Here are the best available options instead:\n`;
+        }
       }
 
-      return `[VENUE_CARDS: ${JSON.stringify({
+      if (venues.length === 0) {
+        return `No venues found in ${city}${capacity ? ` for ${capacity}+ guests` : ''}. Try a nearby city or different guest count.`;
+      }
+
+      return `${styleUnavailableNote}[VENUE_CARDS: ${JSON.stringify({
         venues: venues.map((v) => ({
           name: v.name,
           city: v.city,
