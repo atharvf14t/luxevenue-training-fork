@@ -72,6 +72,7 @@ export function ChatWindow({ sessionId }: ChatWindowProps) {
       if (!text.trim() || isLoading) return;
 
       let currentSessionId = activeSessionId.current;
+      let pendingNavigation: string | null = null;
 
       // Create a new session if none exists
       if (!currentSessionId) {
@@ -88,7 +89,7 @@ export function ChatWindow({ sessionId }: ChatWindowProps) {
         const newSession = await res.json() as { id: string };
         currentSessionId = newSession.id;
         activeSessionId.current = currentSessionId;
-        router.push(`/chat/${currentSessionId}`);
+        pendingNavigation = currentSessionId; // defer navigation until stream completes
       }
 
       const userMessage: Message = {
@@ -147,8 +148,16 @@ export function ChatWindow({ sessionId }: ChatWindowProps) {
             )
           );
         }
+
+        // Navigate after stream completes so the response is visible immediately
+        if (pendingNavigation) {
+          router.push(`/chat/${pendingNavigation}`);
+        }
       } catch {
         setIsLoading(false);
+        if (pendingNavigation) {
+          router.push(`/chat/${pendingNavigation}`);
+        }
         setMessages((prev) => [
           ...prev,
           {
