@@ -93,7 +93,8 @@ model Venue {
   city        String
   state       String
   rooms       Int      @default(60)
-  pricePerDay Int
+  pricePerDayMin Int
+  pricePerDayMax Int
   venueStyle  String
   googleUrl   String
   capacity    Int      @default(300)

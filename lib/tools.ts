@@ -5,64 +5,105 @@ export interface ToolResult {
   content: string;
 }
 
-// Format venue results as markdown numbered list
-function formatVenues(venues: {
-  name: string;
-  city: string;
-  state: string;
-  rooms: number;
-  pricePerDay: number;
-  venueStyle: string;
-  googleUrl: string;
-  capacity: number;
-  description: string;
-}[]): string {
-  if (venues.length === 0) return 'No venues found matching your criteria. Try broadening your search.';
-  return venues
-    .map(
-      (v, i) =>
-        `${i + 1}. **${v.name}**, ${v.city} — Capacity: ${v.capacity} pax, ${v.rooms} rooms, Est. ₹${(v.pricePerDay / 100000).toFixed(1)}L/day | Style: ${v.venueStyle}\n   ${v.description}\n   [View Venue →](${v.googleUrl})`
-    )
-    .join('\n\n');
-}
+// ─── Hardcoded proxy data ──────────────────────────────────────────────────
 
-function formatArtists(artists: {
-  name: string;
-  city: string;
-  state: string;
-  artistType: string;
-  priceRangeMin: number;
-  priceRangeMax: number;
-  googleUrl: string;
-  description: string;
-}[]): string {
-  if (artists.length === 0) return 'No artists found matching your criteria.';
-  return artists
-    .map(
-      (a, i) =>
-        `${i + 1}. **${a.name}** (${a.artistType.replace(/_/g, ' ')}) — ${a.city}, ${a.state} | Budget: ₹${(a.priceRangeMin / 100000).toFixed(1)}L – ₹${(a.priceRangeMax / 100000).toFixed(1)}L\n   ${a.description}\n   [View Profile →](${a.googleUrl})`
-    )
-    .join('\n\n');
-}
+const PROXY_ARTISTS = [
+  {
+    name: 'DJ Aqeel',
+    type: 'DJ / Music Director',
+    city: 'Mumbai',
+    description:
+      "Bollywood's legendary DJ with 20+ years. Iconic at India's biggest weddings & corporate galas. Crafts bespoke sets blending Bollywood hits, retro classics & EDM.",
+    priceMin: 500000,
+    priceMax: 1500000,
+  },
+  {
+    name: 'Anchor Anupriya Kapoor',
+    type: 'Professional Emcee',
+    city: 'Mumbai',
+    description:
+      "India's top bilingual emcee for luxury weddings & corporate events. Known for warmth, wit and ability to electrify any crowd in Hindi & English.",
+    priceMin: 75000,
+    priceMax: 200000,
+  },
+  {
+    name: 'Kailash Kher & Kailasa',
+    type: 'Live Artist / Singer',
+    city: 'Mumbai',
+    description:
+      'Sufi-rock legend behind Teri Deewani & Allah Ke Bande. Electrifying live performances that bring profound emotion to weddings and award nights.',
+    priceMin: 3000000,
+    priceMax: 8000000,
+  },
+  {
+    name: 'Shankar Mahadevan Live Band',
+    type: 'Live Band',
+    city: 'Mumbai',
+    description:
+      'Grammy-winning composer with his full live ensemble. Bollywood, Sufi & classical fusion. Premium entertainment for India\'s most elite events.',
+    priceMin: 5000000,
+    priceMax: 15000000,
+  },
+  {
+    name: 'Rahul Subramanian',
+    type: 'Stand-up Comedian',
+    city: 'Mumbai',
+    description:
+      'Sharp observational comedy in English & Hindi. Crowd favourite at corporate parties, award nights & sangeet nights. Safe, intelligent humour for all audiences.',
+    priceMin: 300000,
+    priceMax: 800000,
+  },
+];
 
-function formatVendors(vendors: {
-  name: string;
-  city: string;
-  state: string;
-  vendorType: string;
-  priceRangeMin: number;
-  priceRangeMax: number;
-  googleUrl: string;
-  description: string;
-}[]): string {
-  if (vendors.length === 0) return 'No vendors found matching your criteria.';
-  return vendors
-    .map(
-      (v, i) =>
-        `${i + 1}. **${v.name}** (${v.vendorType.replace(/_/g, ' ')}) — ${v.city}, ${v.state} | Budget: ₹${(v.priceRangeMin / 100000).toFixed(1)}L – ₹${(v.priceRangeMax / 100000).toFixed(1)}L\n   ${v.description}\n   [View Profile →](${v.googleUrl})`
-    )
-    .join('\n\n');
-}
+const PROXY_VENDORS = [
+  {
+    name: 'Shaadi Décor by Isha',
+    type: 'Premium Decorator',
+    city: 'Mumbai',
+    description:
+      'Award-winning luxury floral & fabric decorator. Known for elaborate mandap designs, enchanting entrances & signature floral installations.',
+    priceMin: 500000,
+    priceMax: 3000000,
+  },
+  {
+    name: 'Joseph Radhik Photography',
+    type: 'Photographer & Cinematographer',
+    city: 'Chennai',
+    description:
+      "India's most celebrated wedding photographer. Featured in Vogue & Harper's Bazaar. Cinematic editorial eye — books 18 months in advance.",
+    priceMin: 800000,
+    priceMax: 3000000,
+  },
+  {
+    name: 'Wizcraft International',
+    type: 'AV Production House',
+    city: 'Mumbai',
+    description:
+      "India's premier event production company. Complete AV, staging, LED walls, artist management & creative concepts for India's biggest events.",
+    priceMin: 2000000,
+    priceMax: 20000000,
+  },
+  {
+    name: 'SFX India',
+    type: 'SFX & Special Effects',
+    city: 'Mumbai',
+    description:
+      'Specialists in cold pyro, confetti cannons, CO₂ jets & grand entry effects. Trained technicians with full safety protocols.',
+    priceMin: 100000,
+    priceMax: 800000,
+  },
+  {
+    name: 'Royal Valet & Security',
+    type: 'Valet & Security Services',
+    city: 'New Delhi',
+    description:
+      'Professional valet parking & event security. Formal attire, real-time car tracking & discreet security for high-profile guests.',
+    priceMin: 80000,
+    priceMax: 300000,
+  },
+];
+
+// ─── Tool handler ──────────────────────────────────────────────────────────
 
 export async function handleToolCall(
   toolName: string,
@@ -70,12 +111,11 @@ export async function handleToolCall(
 ): Promise<string> {
   switch (toolName) {
     case 'search_venues': {
-      const { city, event_type, capacity, venue_type, budget_range } = args as {
+      const { city, event_type, capacity, venue_type } = args as {
         city: string;
         event_type: string;
         capacity?: number;
         venue_type?: string;
-        budget_range?: string;
       };
 
       const where: Record<string, unknown> = {};
@@ -85,52 +125,42 @@ export async function handleToolCall(
 
       const venues = await prisma.venue.findMany({
         where,
-        take: 5,
-        orderBy: { pricePerDay: 'asc' },
+        take: 3,
+        orderBy: { pricePerDayMin: 'asc' },
       });
 
-      return formatVenues(venues);
+      const guestCount = capacity ?? 100;
+
+      if (venues.length === 0) {
+        return 'No venues found matching your criteria. Try broadening your search.';
+      }
+
+      return `[VENUE_CARDS: ${JSON.stringify({
+        venues: venues.map((v) => ({
+          name: v.name,
+          city: v.city,
+          state: v.state,
+          capacity: v.capacity,
+          rooms: v.rooms,
+          priceMin: v.pricePerDayMin,
+          priceMax: v.pricePerDayMax,
+          style: v.venueStyle,
+          url: v.googleUrl,
+          totalMin: guestCount * v.pricePerDayMin,
+          totalMax: guestCount * v.pricePerDayMax,
+        })),
+        guestCount,
+      })}]`;
     }
 
-    case 'search_artists': {
-      const { category, budget_min, budget_max, gender } = args as {
-        category: string;
-        budget_min?: number;
-        budget_max?: number;
-        gender?: string;
-      };
-
-      const where: Record<string, unknown> = {};
-      if (category) where.artistType = { contains: category.replace(/ /g, '_'), mode: 'insensitive' };
-      if (budget_min) where.priceRangeMin = { gte: budget_min };
-      if (budget_max) where.priceRangeMax = { lte: budget_max };
-
-      const artists = await prisma.artist.findMany({
-        where,
-        take: 5,
-        orderBy: { priceRangeMin: 'asc' },
-      });
-
-      return formatArtists(artists);
+    case 'show_artists': {
+      const { category } = args as { category: string };
+      return `[ARTIST_CARDS: ${JSON.stringify({ category, artists: PROXY_ARTISTS })}]`;
     }
 
-    case 'search_vendors': {
-      const { service_type, city } = args as {
-        service_type: string;
-        city?: string;
-      };
-
-      const where: Record<string, unknown> = {};
-      if (service_type) where.vendorType = { contains: service_type.replace(/ /g, '_'), mode: 'insensitive' };
-      if (city) where.city = { contains: city, mode: 'insensitive' };
-
-      const vendors = await prisma.vendor.findMany({
-        where,
-        take: 5,
-        orderBy: { priceRangeMin: 'asc' },
-      });
-
-      return formatVendors(vendors);
+    case 'show_vendors': {
+      const { category } = args as { category: string };
+      return `[VENDOR_CARDS: ${JSON.stringify({ category, vendors: PROXY_VENDORS })}]`;
     }
 
     case 'calculate_liquor': {
@@ -150,7 +180,7 @@ export async function handleToolCall(
     }
 
     case 'calculate_budget': {
-      const { total_budget, guest_count, event_type, services_needed } = args as {
+      const { total_budget, guest_count, event_type } = args as {
         total_budget: number;
         guest_count: number;
         event_type: string;
@@ -189,7 +219,6 @@ export async function handleToolCall(
         style?: string;
       };
 
-      // Return a marker that the frontend will intercept
       return `[GENERATE_IMAGE: area="${area}" theme="${color_theme}" event="${event_type}" style="${style ?? 'elegant'}"]`;
     }
 
@@ -235,13 +264,14 @@ export async function handleToolCall(
   }
 }
 
-// Tool definitions for Azure OpenAI function calling
+// ─── Tool definitions for Azure OpenAI function calling ───────────────────
+
 export const TOOL_DEFINITIONS = [
   {
     type: 'function' as const,
     function: {
       name: 'search_venues',
-      description: 'Search for event venues in our database. Returns up to 5 results.',
+      description: 'Search for event venues in our database. Returns top 3 results as venue cards.',
       parameters: {
         type: 'object',
         properties: {
@@ -249,9 +279,9 @@ export const TOOL_DEFINITIONS = [
           capacity: { type: 'number', description: 'Minimum guest capacity needed' },
           venue_type: {
             type: 'string',
-            enum: ['5-star', 'heritage', 'resort', 'outdoor', 'banquet', 'any'],
+            enum: ['luxury', 'modern', 'heritage', 'any'],
+            description: 'luxury = 5-star premium hotels (Taj, Oberoi, ITC, Marriott etc.), modern = contemporary business hotels (Hyatt, Radisson, Novotel etc.), heritage = palace/historical properties',
           },
-          budget_range: { type: 'string', description: 'Budget range e.g. "5-10L"' },
           event_type: {
             type: 'string',
             enum: ['wedding', 'corporate', 'social', 'destination-wedding'],
@@ -264,15 +294,15 @@ export const TOOL_DEFINITIONS = [
   {
     type: 'function' as const,
     function: {
-      name: 'search_artists',
-      description: 'Search for artists/entertainment by category and budget',
+      name: 'show_artists',
+      description: 'Show bookable artists for a given category. Returns artist cards with Book buttons.',
       parameters: {
         type: 'object',
         properties: {
-          category: { type: 'string', description: 'Artist category e.g. dj, emcee, live band' },
-          budget_min: { type: 'number', description: 'Minimum budget in INR' },
-          budget_max: { type: 'number', description: 'Maximum budget in INR' },
-          gender: { type: 'string', enum: ['male', 'female', 'any'] },
+          category: {
+            type: 'string',
+            description: 'Artist category e.g. Emcee, DJ, Live Band, Comedian',
+          },
         },
         required: ['category'],
       },
@@ -281,15 +311,17 @@ export const TOOL_DEFINITIONS = [
   {
     type: 'function' as const,
     function: {
-      name: 'search_vendors',
-      description: 'Search for vendors by service type and city',
+      name: 'show_vendors',
+      description: 'Show enquirable vendors for a given category. Returns vendor cards with Enquire buttons.',
       parameters: {
         type: 'object',
         properties: {
-          service_type: { type: 'string', description: 'Type of service e.g. decorator, photographer' },
-          city: { type: 'string' },
+          category: {
+            type: 'string',
+            description: 'Vendor category e.g. Decorator, Photographer, AV Production',
+          },
         },
-        required: ['service_type'],
+        required: ['category'],
       },
     },
   },
