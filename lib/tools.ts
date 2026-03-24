@@ -125,7 +125,7 @@ export async function handleToolCall(
 
       let venues = await prisma.venue.findMany({
         where,
-        take: 3,
+        take: 8,
         orderBy: { pricePerDayMin: 'asc' },
       });
 
@@ -139,7 +139,7 @@ export async function handleToolCall(
         if (capacity) fallbackWhere.capacity = { gte: capacity };
         venues = await prisma.venue.findMany({
           where: fallbackWhere,
-          take: 3,
+          take: 8,
           orderBy: { pricePerDayMin: 'asc' },
         });
         if (venues.length > 0) {

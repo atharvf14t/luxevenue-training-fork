@@ -37,7 +37,12 @@ export async function POST(req: NextRequest) {
 
   const language = detectLanguage(message);
   const userName = session.user.name?.split(" ")[0] ?? "there";
-  const systemPrompt = buildSystemPrompt(userName, language);
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { gender: true },
+  });
+  const userGender = dbUser?.gender ?? "unknown";
+  const systemPrompt = buildSystemPrompt(userName, language, userGender);
 
   // Save user message
   await prisma.message.create({

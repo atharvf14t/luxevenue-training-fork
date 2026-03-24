@@ -98,7 +98,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
           onKeyDown={handleKeyDown}
           placeholder="Ask the AI Concierge about venues, planning, or hospitality..."
           rows={1}
-          className="flex-1 bg-transparent resize-none text-[#e8eaf0] placeholder-[#4b5563] italic text-sm outline-none py-0.5 leading-relaxed min-h-[22px] max-h-[120px]"
+          className="flex-1 bg-transparent resize-none text-[#e8eaf0] placeholder-[#4b5563] text-sm outline-none py-0.5 leading-relaxed min-h-[22px] max-h-[120px]"
         />
 
         {/* Mic button */}

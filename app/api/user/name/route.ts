@@ -14,9 +14,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
+  const firstName = name.trim().split(" ")[0];
+  let gender = "unknown";
+  try {
+    const gRes = await fetch(`https://api.genderize.io/?name=${encodeURIComponent(firstName)}`);
+    if (gRes.ok) {
+      const gData = await gRes.json() as { gender: string | null };
+      if (gData.gender) gender = gData.gender;
+    }
+  } catch { /* silently fall back to "unknown" */ }
+
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { name: name.trim() },
+    data: { name: name.trim(), gender },
   });
 
   return NextResponse.json({ ok: true });

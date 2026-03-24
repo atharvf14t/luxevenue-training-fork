@@ -19,10 +19,30 @@ interface ChatWindowProps {
 }
 
 const SUGGESTION_CARDS = [
-  "Find luxury wedding venues in Delhi for 300 guests",
-  "Recommend a jazz band for a cocktail reception",
-  "Help me shortlist ballroom venues for a corporate gala",
-  "Suggest menu and hospitality options for a destination wedding",
+  {
+    icon: "🏨",
+    title: "Plan a Venue",
+    description: "Suggest 5-star hotels based on your budget & guest count.",
+    prompt: "I want to plan a venue for my event. Help me find the right luxury hotel.",
+  },
+  {
+    icon: "🎤",
+    title: "Book Talent",
+    description: "Find verified Artists & Vendors with live availability.",
+    prompt: "Help me find and book artists and vendors for my event.",
+  },
+  {
+    icon: "🛡️",
+    title: "Financial Security",
+    description: "Explain our 40/60 Escrow & Event Insurance.",
+    prompt: "Explain your Escrow payment system and LuxeVenue Event Insurance.",
+  },
+  {
+    icon: "🔄",
+    title: "Resale Engine",
+    description: "Help you re-sell or find cancelled event dates.",
+    prompt: "Tell me about the Resale Engine — how can I re-sell or find cancelled event dates?",
+  },
 ];
 
 export function ChatWindow({ sessionId }: ChatWindowProps) {
@@ -211,26 +231,26 @@ export function ChatWindow({ sessionId }: ChatWindowProps) {
           </div>
 
           {/* Headline */}
-          <h2 className="font-playfair text-[32px] md:text-[38px] font-semibold text-[#e8eaf0] leading-tight mb-4 max-w-lg">
-            How may we assist your event today?
+          <h2 className="font-playfair text-[32px] md:text-[38px] font-normal text-[#e8eaf0] leading-tight mb-4 max-w-lg">
+            Hello! I am your LuxeVenue AI Concierge.
           </h2>
 
           {/* Subtitle */}
           <p className="text-sm text-[#6b7280] max-w-md leading-relaxed mb-8">
-            From venue discovery to guest experience, the LuxeVenue AI
-            Concierge helps you plan with intelligence, discretion, and ease.
+            Your 24/7 Strategic Partner for Luxury Events. I am here to help you navigate India&apos;s first AI-Powered Event Ecosystem — from 5-star venues and top-tier talent to Escrow-secured payments. What can I do for you today?
           </p>
 
           {/* Suggestion cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl mb-8">
             {SUGGESTION_CARDS.map((card, i) => (
-              <button
+              <div
                 key={i}
-                onClick={() => sendMessage(card)}
-                className="p-4 rounded-xl bg-[#111827] border border-[#1e2d3d] text-left text-sm text-[#e8eaf0] cursor-pointer hover:border-[#2a3a50] hover:bg-[#131c2e] transition-all min-h-[80px] flex items-start"
+                className="p-4 rounded-xl bg-[#111827] border border-[#1e2d3d] text-left text-sm text-[#e8eaf0] min-h-[80px] flex flex-col gap-1"
               >
-                {card}
-              </button>
+                <span className="text-xl">{card.icon}</span>
+                <span className="font-semibold text-[#c9a84c]">{card.title}</span>
+                <span className="text-[#9ca3af] text-xs leading-relaxed">{card.description}</span>
+              </div>
             ))}
           </div>
         </div>
