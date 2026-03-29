@@ -3,10 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { detectLanguage } from "@/lib/language-detect";
-import { buildSystemPrompt } from "@/lib/knowledge-base";
-import { handleToolCall, TOOL_DEFINITIONS } from "@/lib/tools";
-import { createAzureClient } from "@/lib/azure-openai";
-import OpenAI from "openai";
 
 export const maxDuration = 60;
 
@@ -28,7 +24,6 @@ export async function POST(req: NextRequest) {
   // Verify session belongs to user
   const chatSession = await prisma.chatSession.findUnique({
     where: { id: sessionId },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
   });
 
   if (!chatSession || chatSession.userId !== session.user.id) {
@@ -42,7 +37,6 @@ export async function POST(req: NextRequest) {
     select: { gender: true },
   });
   const userGender = dbUser?.gender ?? "unknown";
-  const systemPrompt = buildSystemPrompt(userName, language, userGender);
 
   // Save user message
   await prisma.message.create({
@@ -54,100 +48,70 @@ export async function POST(req: NextRequest) {
     data: { updatedAt: new Date() },
   });
 
-  // Build message history (excluding the message we just added — we add it fresh below)
-  const history: OpenAI.ChatCompletionMessageParam[] = chatSession.messages.map(
-    (m) => ({ role: m.role as "user" | "assistant", content: m.content })
-  );
-  history.push({ role: "user", content: message });
+  // ── Forward to Python multi-agent service ──────────────────────────────────
+  const pythonAgentUrl = process.env.PYTHON_AGENT_URL ?? "http://localhost:8000";
+  const internalKey = process.env.INTERNAL_API_KEY ?? "";
 
-  const client = createAzureClient();
-
-  // Tool call loop (non-streaming iterations)
-  const extraMessages: OpenAI.ChatCompletionMessageParam[] = [];
-  const MAX_TOOL_ITERATIONS = 3;
-
-  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-    const allMessages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: "system", content: systemPrompt },
-      ...history,
-      ...extraMessages,
-    ];
-
-    const response = await client.chat.completions.create({
-      model: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o-2024-08-06",
-      messages: allMessages,
-      tools: TOOL_DEFINITIONS,
-      tool_choice: "auto",
-      stream: false,
+  let pythonResponse: Response;
+  try {
+    pythonResponse = await fetch(`${pythonAgentUrl}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-key": internalKey,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        message,
+        user_id: session.user.id,
+        user_name: userName,
+        user_gender: userGender,
+        language,
+      }),
     });
-
-    const choice = response.choices[0];
-
-    if (
-      choice.finish_reason !== "tool_calls" ||
-      !choice.message.tool_calls?.length
-    ) {
-      break; // No tool calls needed — proceed to streaming final response
-    }
-
-    // Add assistant message (with tool_calls) to context
-    extraMessages.push(choice.message as OpenAI.ChatCompletionMessageParam);
-
-    // Execute each tool and add results
-    for (const toolCall of choice.message.tool_calls) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tc = toolCall as any;
-      const fnName: string = tc.function?.name ?? tc.name ?? "";
-      const fnArgs: string = tc.function?.arguments ?? tc.arguments ?? "{}";
-      const args = JSON.parse(fnArgs) as Record<string, unknown>;
-      const result = await handleToolCall(fnName, args);
-
-      extraMessages.push({
-        role: "tool",
-        content: result,
-        tool_call_id: toolCall.id,
-      } as OpenAI.ChatCompletionMessageParam);
-    }
+  } catch (err) {
+    console.error("[chat/route] Python agent unreachable:", err);
+    return NextResponse.json(
+      { error: "AI service temporarily unavailable. Please try again shortly." },
+      { status: 503 }
+    );
   }
 
-  // Stream final response
-  const finalMessages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    ...history,
-    ...extraMessages,
-  ];
+  if (!pythonResponse.ok) {
+    return NextResponse.json(
+      { error: "AI service returned an error." },
+      { status: 502 }
+    );
+  }
 
-  const stream = await client.chat.completions.create({
-    model: process.env.AZURE_OPENAI_DEPLOYMENT ?? "gpt-4o-2024-08-06",
-    messages: finalMessages,
-    stream: true,
-  });
-
+  // Stream the Python response body to the browser while capturing the full content
   let fullContent = "";
 
   const readable = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      const reader = pythonResponse.body?.getReader();
+      if (!reader) {
+        controller.close();
+        return;
+      }
+      const decoder = new TextDecoder();
       try {
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content ?? "";
-          if (delta) {
-            fullContent += delta;
-            controller.enqueue(encoder.encode(delta));
-          }
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const text = decoder.decode(value, { stream: true });
+          fullContent += text;
+          controller.enqueue(encoder.encode(text));
         }
       } finally {
         controller.close();
+        reader.releaseLock();
         // Save assistant message after stream finishes
         if (fullContent) {
           prisma.message
             .create({
-              data: {
-                sessionId,
-                role: "assistant",
-                content: fullContent,
-                language,
-              },
+              data: { sessionId, role: "assistant", content: fullContent, language },
             })
             .catch(() => {});
         }
