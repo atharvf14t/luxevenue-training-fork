@@ -46,7 +46,7 @@ app = FastAPI(
 # Allow calls from Next.js dev server and production domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://luxevenue.ai", "https://www.luxevenue.ai"],
+    allow_origins=["http://localhost:3000", "https://luxevenue.ai", "https://www.luxevenue.ai", "https://luxevenue-concierge.vercel.app"],
     allow_credentials=True,
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
