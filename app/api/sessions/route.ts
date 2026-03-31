@@ -12,7 +12,7 @@ export async function GET() {
   const sessions = await prisma.chatSession.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: "desc" },
-    take: 5,
+    take: 15,
     select: { id: true, title: true, createdAt: true, updatedAt: true },
   });
 
@@ -29,7 +29,7 @@ export async function POST() {
     where: { userId: session.user.id },
   });
 
-  if (count >= 5) {
+  if (count >= 15) {
     return NextResponse.json(
       { error: "SESSION_LIMIT_REACHED" },
       { status: 403 }
