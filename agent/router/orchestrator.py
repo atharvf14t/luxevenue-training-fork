@@ -31,6 +31,15 @@ from agents.product_launch_agent import ProductLaunchAgent
 from agents.offsite_agent import OffsiteAgent
 from agents.team_building_agent import TeamBuildingAgent
 from agents.cocktail_night_agent import CocktailNightAgent
+from agents.milestone_birthday_agent import MilestoneBirthdayAgent
+from agents.corporate_anniversary_agent import CorporateAnniversaryAgent
+from agents.marriage_anniversary_agent import MarriageAnniversaryAgent
+from agents.festive_party_agent import FestivePartyAgent
+from agents.housewarming_agent import HousewarmingAgent
+from agents.reunion_party_agent import ReunionPartyAgent
+from agents.theme_party_agent import ThemePartyAgent
+from agents.baby_shower_agent import BabyShowerAgent
+from agents.gender_reveal_agent import GenderRevealAgent
 from agents.fallback_agent import FallbackAgent
 from core.config import settings
 from core.email_service import send_inquiry_email
@@ -63,6 +72,15 @@ AGENTS: dict[str, BaseAgent] = {
     "offsite": OffsiteAgent(),
     "team_building": TeamBuildingAgent(),
     "cocktail_night": CocktailNightAgent(),
+    "milestone_birthday": MilestoneBirthdayAgent(),
+    "corporate_anniversary": CorporateAnniversaryAgent(),
+    "marriage_anniversary": MarriageAnniversaryAgent(),
+    "festive_party": FestivePartyAgent(),
+    "housewarming": HousewarmingAgent(),
+    "reunion_party": ReunionPartyAgent(),
+    "theme_party": ThemePartyAgent(),
+    "baby_shower": BabyShowerAgent(),
+    "gender_reveal": GenderRevealAgent(),
     "fallback": FallbackAgent(),
 }
 
@@ -96,7 +114,16 @@ Respond with exactly ONE of these labels (no explanation):
 - offsite               (offsites, corporate retreats, resort trips, team getaways, team trips, company retreats)
 - team_building         (team building, team activities, corporate games, bonding activities, group challenges, team games)
 - cocktail_night        (cocktail nights, cocktail events, networking drinks, corporate bar night, mixology events)
-- fallback              (weddings, birthdays, social events, or unclear)
+- milestone_birthday    (milestone birthdays, 1st birthday, 18th birthday, 50th birthday, 60th birthday, birthday party, birthday celebration)
+- corporate_anniversary (corporate anniversary, company anniversary, silver jubilee, golden jubilee, 25 years of company, 50 years of company, business milestone anniversary)
+- marriage_anniversary  (marriage anniversary, wedding anniversary, silver anniversary, golden anniversary, couple anniversary, 25th wedding, 50th wedding)
+- festive_party         (festive party, Diwali party, Holi party, Christmas party, New Year party, New Year eve, festive celebration, holiday party)
+- housewarming          (housewarming, griha pravesh, new home celebration, house warming party, new house party)
+- reunion_party         (reunion party, school reunion, college reunion, batch reunion, old friends reunion, family reunion, batchmates party)
+- theme_party           (theme party, themed party, Bollywood party, Hollywood party, Great Gatsby party, masquerade party, retro party, space party, Arabian nights party, casino party, costume party)
+- baby_shower           (baby shower, godh bharai, baby celebration, maternity party, baby blessing, godh bharai ceremony)
+- gender_reveal         (gender reveal, gender reveal party, boy or girl party, baby gender reveal, gender announcement)
+- fallback              (unclear or other social events)
 
 User message: {message}"""
 
